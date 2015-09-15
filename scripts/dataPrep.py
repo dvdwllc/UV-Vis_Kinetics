@@ -283,7 +283,7 @@ def write_concs(run_concs, name):
 
 
 
-if __name__ = '__main__':
+if __name__ == '__main__':
     #Predict concentrations from other datasets
     run1_17C = pd.read_csv('run1_17C.TXT', encoding='utf-16', skiprows=5, sep='\t')
     run2_25C = pd.read_csv('run2_25C.TXT', encoding='utf-16', skiprows=5, sep='\t')
