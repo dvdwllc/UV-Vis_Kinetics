@@ -1,5 +1,5 @@
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 def gaussian(WL, h1, l1, w1):
      """
@@ -26,7 +26,9 @@ def gaussian(WL, h1, l1, w1):
      -------
      Predicted Absorbance: float
      """
-     return (h1*np.exp(-((WL-l1)**2)/(2*w1**2)))
+     return h1*np.exp(
+         -((WL-l1)**2)/(2*w1**2)
+     )
     
 def gaussian3(WL, h1, l1, w1, h2, l2, w2, h3, l3, w3, c):
     """
@@ -56,9 +58,12 @@ def gaussian3(WL, h1, l1, w1, h2, l2, w2, h3, l3, w3, c):
     -------
     Predicted Absorbance: float
     """
-    return (h1*np.exp(-((WL-l1)**2)/(2*w1**2)) + 
-            h2*np.exp(-((WL-l2)**2)/(2*w2**2)) +
-            h3*np.exp(-((WL-l3)**2)/(2*w3**2)) + c)
+    return (
+        h1*np.exp(-((WL-l1)**2)/(2*w1**2)) +
+        h2*np.exp(-((WL-l2)**2)/(2*w2**2)) +
+        h3*np.exp(-((WL-l3)**2)/(2*w3**2)) +
+        c
+    )
             
 def linear(x, a, b):
     return a*x + b
