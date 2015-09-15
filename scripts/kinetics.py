@@ -100,9 +100,9 @@ def get_rate_constant(dataset, t0, t1, order):
         
         include_trihalides: Boolean. Whether or not to account for trihalide 
                     concentration in the fit.
-
-        order: Int. specifies the desired kinetics plots (zero, first,
-        or second).
+                    
+        order: Int. specifies the desired kinetics plots 
+                    (zero, first, or second).
     
     Returns the slope and intercept, and r-squared.
     """
@@ -110,7 +110,7 @@ def get_rate_constant(dataset, t0, t1, order):
     xvals, yvals = get_range(dataset, t0, t1)
     
     #Perform the fit to the appropriate data.
-    if order == 0: 
+    if order == 0:
         slope, intercept, r_value, p_value, std_err = stats.linregress(
             xvals, yvals
         )
