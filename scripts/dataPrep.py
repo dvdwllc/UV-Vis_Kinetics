@@ -256,16 +256,6 @@ plt.legend()
 #SHOW ALL RESULT$
 plt.show()
 
-#Predict concentrations from other datasets
-run1_17C = pd.read_csv('run1_17C.TXT', encoding='utf-16', skiprows=5, sep='\t')
-run2_25C = pd.read_csv('run2_25C.TXT', encoding='utf-16', skiprows=5, sep='\t')
-run3_35C = pd.read_csv('run3_35C.TXT', encoding='utf-16', skiprows=5, sep='\t')
-
-
-run1_17C_concs = get_concs(run1_17C.transpose())
-run2_25C_concs = get_concs(run2_25C.transpose())
-run3_35C_concs = get_concs(run3_35C.transpose())
-
 
 def write_concs(run_concs, name):
 	"""
@@ -290,7 +280,21 @@ def write_concs(run_concs, name):
 						  str(run_concs[1][i])+' '+
 						  str(run_concs[2][i])+'\n')
 	return 0
-	
-write_concs(run1_17C_concs, '17C_concs')
-write_concs(run2_25C_concs, '25C_concs')
-write_concs(run3_35C_concs, '35C_concs')
+
+
+
+if __name__ = '__main__':
+    #Predict concentrations from other datasets
+    run1_17C = pd.read_csv('run1_17C.TXT', encoding='utf-16', skiprows=5, sep='\t')
+    run2_25C = pd.read_csv('run2_25C.TXT', encoding='utf-16', skiprows=5, sep='\t')
+    run3_35C = pd.read_csv('run3_35C.TXT', encoding='utf-16', skiprows=5, sep='\t')
+
+
+    run1_17C_concs = get_concs(run1_17C.transpose())
+    run2_25C_concs = get_concs(run2_25C.transpose())
+    run3_35C_concs = get_concs(run3_35C.transpose())
+
+    write_concs(run1_17C_concs, '17C_concs')
+    write_concs(run2_25C_concs, '25C_concs')
+    write_concs(run3_35C_concs, '35C_concs')
+    
