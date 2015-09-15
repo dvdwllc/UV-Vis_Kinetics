@@ -69,7 +69,10 @@ def get_range(dataset, t0, t1, include_trihalides=False):
                 3*dataset['CNaBr3'].values[tf0:tf1]
             )/2.0
         except KeyError:
-            yvals = (2*dataset['CI2'].values[tf0:tf1]+3*dataset['CNaI3'].values[tf0:tf1])/2.0
+            yvals = (
+                2*dataset['CI2'].values[tf0:tf1] +
+                3*dataset['CNaI3'].values[tf0:tf1]
+            )/2.0
     else:
         try:
             yvals = (dataset['CBr2'].values[tf0:tf1])
@@ -97,8 +100,9 @@ def get_rate_constant(dataset, t0, t1, order):
         
         include_trihalides: Boolean. Whether or not to account for trihalide 
                     concentration in the fit.
-                    
-        order: Int. specifies the desired kinetics plots (zero, first, or second).
+
+        order: Int. specifies the desired kinetics plots (zero, first,
+        or second).
     
     Returns the slope and intercept, and r-squared.
     """
@@ -107,15 +111,23 @@ def get_rate_constant(dataset, t0, t1, order):
     
     #Perform the fit to the appropriate data.
     if order == 0: 
-        slope, intercept, r_value, p_value, std_err = stats.linregress(xvals, yvals)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(
+            xvals, yvals
+        )
+
         return (slope, intercept, r_value**2)
     elif order == 1:
-        slope, intercept, r_value, p_value, std_err = stats.linregress(xvals, np.log(yvals))
+        slope, intercept, r_value, p_value, std_err = stats.linregress(
+            xvals, np.log(yvals)
+        )
         # Establish a max line length and stick to it. Mine is 80 chars,
         # line above is 93. Your editor should have an option to do this.
         return (slope, intercept, r_value**2)
     elif order == 2:
-        slope, intercept, r_value, p_value, std_err = stats.linregress(xvals, 1/yvals)
+        slope, intercept, r_value, p_value, std_err = stats.linregress(
+            xvals, 1/yvals
+        )
+
         return (slope, intercept, r_value**2)
     else:
         print 'Invalid reaction order!'
@@ -124,9 +136,9 @@ def get_rate_constant(dataset, t0, t1, order):
         
 def compare_timerange(dataset, starttime, timerange, order, plot=True):
     """
-    Calculates the rate constant for a zero, first-, or second-order kinetics plot
-    over multiple different time ranges.
-    Plots the full dataset and all fitted lines vs. time, and ln(k) vs. fit range.
+    Calculates the rate constant for a zero, first-, or second-order
+    kinetics plot over multiple different time ranges. Plots the full
+    dataset and all fitted lines vs. time, and ln(k) vs. fit range.
     
     Args:
         dataset: a Pandas dataframe containing time, halogen concentration, 
@@ -148,6 +160,7 @@ def compare_timerange(dataset, starttime, timerange, order, plot=True):
     
     if plot:
       f, (ax1, ax2) = plt.subplots(1, 2)
+      # label these strings
       ax1.set_xlabel('Time (min)')
       ax2.set_xlabel('End time of fit (min)')
       ax2.set_ylabel('ln(k)')
@@ -159,7 +172,12 @@ def compare_timerange(dataset, starttime, timerange, order, plot=True):
 
         for i in range(len(slopes)):
             if plot:
-                ax1.plot(xvals, linear(xvals, slopes[i], intercepts[i]), color = 'r', alpha=0.4)
+                ax1.plot(
+                    xvals,
+                    linear(xvals, slopes[i], intercepts[i]),
+                    color = 'r',
+                    alpha=0.4
+                )
                 ax2.plot(timerange[i], np.log(-slopes[i]), 'o-', color='r')
 
         return np.log(-slopes)
@@ -171,7 +189,12 @@ def compare_timerange(dataset, starttime, timerange, order, plot=True):
 
         for i in range(len(slopes)):
             if plot:
-                ax1.plot(xvals, linear(xvals, slopes[i], intercepts[i]), color = 'r', alpha=0.4)
+                ax1.plot(
+                    xvals,
+                    linear(xvals, slopes[i], intercepts[i]),
+                    color = 'r',
+                    alpha=0.4
+                )
                 ax2.plot(timerange[i], np.log(-slopes[i]), 'o-', color='r')
 
         return np.log(-slopes)
@@ -179,17 +202,25 @@ def compare_timerange(dataset, starttime, timerange, order, plot=True):
     elif order == 2:
         if plot:
             ax1.plot(xvals, 1/(yvals), 'x')
+            # label this string
             ax1.set_ylabel(r'1/[X] (M$^{\rm -1}$)')
 
         for i in range(len(slopes)):
             if plot:
-               ax1.plot(xvals, linear(xvals, slopes[i], intercepts[i]), color = 'r', alpha=0.4)
+               ax1.plot(
+                   xvals,
+                   linear(xvals, slopes[i], intercepts[i]),
+                   color = 'r',
+                   alpha=0.4
+               )
                ax2.plot(timerange[i], np.log(slopes[i]), 'o-', color='r')
 
         return np.log(slopes)
 
 
-def arrhenius_plot(datasets, temperatures, starttime, timerange, order, plotfits=False):
+def arrhenius_plot(
+        datasets, temperatures, starttime, timerange, order, plotfits=False
+):
     # Define important constants for the whole file outside all the
     # functions, and ones only important to the function inside the function
     # e.g. X_LABEL = '1/T (1/K)'
@@ -198,7 +229,13 @@ def arrhenius_plot(datasets, temperatures, starttime, timerange, order, plotfits
     ax0.set_ylabel('ln(k)')
 
     for i in range(len(datasets)):
-       logk = compare_timerange(datasets[i], starttime, timerange, order, plotfits)
+       logk = compare_timerange(
+           datasets[i],
+           starttime,
+           timerange,
+           order,
+           plotfits
+       )
        ax0.plot(
            1/(temperatures[i]*np.ones(len(timerange))),
            logk,
@@ -206,13 +243,29 @@ def arrhenius_plot(datasets, temperatures, starttime, timerange, order, plotfits
        )
 
 
-def arrhenius_plot_multi(datasets, colors, temperatures, starttime, timerange, order):
+def arrhenius_plot_multi(
+        datasets, colors, temperatures, starttime, timerange, order
+):
    for i in range(len(datasets)):
-       logk = compare_timerange(datasets[i], starttime, timerange, order, False)
-       plt.plot(1/((temperatures[i])*np.ones(len(timerange))), logk, 'o-', color=colors)
+       logk = compare_timerange(
+           datasets[i],
+           starttime,
+           timerange,
+           order,
+           False
+       )
+       plt.plot(
+           1/(
+               (temperatures[i])*np.ones(len(timerange))
+           ),
+           logk,
+           'o-',
+           color=colors
+       )
 
 
 def plot_all(datasets, order):
+     # label these strings
     t0 = 0
 
     if order == 0:

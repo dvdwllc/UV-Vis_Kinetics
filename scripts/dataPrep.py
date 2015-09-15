@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import spectralFunctions as spec
 from scipy.optimize import curve_fit
 
+# So my input about kinetics.py goes here too. Max line length (80),
+# naming strings, and formatting. Also! I think you should define all your
+# functions (gauss5, etc.) somewhere else (util.py or something) then use
+# them in scripts like analysis.py.
+
 """
 Here we train a collection of gaussian-like functions to UV-Vis absorption 
 spectra collected on solutions of known bromine and sodium tribromide concentration
@@ -13,10 +18,12 @@ over the wavelength range 360 to 650 nm.
     *The sodium tribromide spectrum is represented by a sum of two gaussians.
 
 Once the individual spectral shapes are determined, the concentration of both
-species in an unknown solution can be determined by finding the optimum intensity contribution of each peakshape to the observed absorption spectrum. 
+species in an unknown solution can be determined by finding the optimum
+intensity contribution of each peakshape to the observed absorption spectrum.
 """
 
 #load training data as pandas DataFrames
+
 train1 = pd.read_csv('TRAIN1.TXT', encoding='utf-16', skiprows=5, sep='\t')
 train2 = pd.read_csv('TRAIN2.TXT', encoding='utf-16', skiprows=5, sep='\t')
 
