@@ -1,9 +1,12 @@
 import numpy as np
+
+from matplotlib import pyplot as plt
 from scipy import stats
-import matplotlib.pyplot as plt
+
 
 def linear(x, a, b):
     return a*x + b
+
 
 def get_range(dataset, t0, t1, include_trihalides=False):
     """
@@ -20,25 +23,37 @@ def get_range(dataset, t0, t1, include_trihalides=False):
         
     returns xvals, yvals as arrays.
     """
+
+    # ADD your 'magic strings' here. Keeps errors from misspelling from
+    # happening and explains what's going on with the names.
+    TIME_INDEX = 'time (min)'
+    COMPOUND_A = 'CNaBr3'
+    COMPOUND_B = 'CNaI3'
+    # etc...
     
     #Find indices of lower and upper time bounds
     #get time between lower and upper time bounds as xvals
     try:
-        tf0 = np.argwhere(dataset['time (min)'].values > t0)[0][0]
-        tf1 = np.argwhere(dataset['time (min)'].values > t1)[0][0]
-        xvals = dataset['time (min)'].values[tf0:tf1]
-    except IndexError:
+        # If this is a big data set (I'm sure it could be) it's probably a
+        # bad idea to look through it so many times when all you want is the
+        #  largest / smallest times in some range. Also IDK what 'values'
+        # does.
+        tf0 = np.argwhere(dataset[TIME_INDEX].values > t0)[0][0]
+        tf1 = np.argwhere(dataset[TIME_INDEX].values > t1)[0][0]
+        xvals = dataset[TIME_INDEX].values[tf0:tf1]
+    except IndexError as e:
+        # you could use 'e' here to figure out which bound is too high
         print 'Invalid t0 or t1 value!' #if either bound is too high
         return 0
         
     try:
-        if not np.isnan(dataset['CNaBr3'].values[0]):
+        if not np.isnan(dataset[COMPOUND_A].values[0]):
             include_trihalides = True
     except KeyError:
         pass
     
     try:
-        if not np.isnan(dataset['CNaI3'].values[0]):
+        if not np.isnan(dataset[COMPOUND_B].values[0]):
             include_trihalides = True
     except KeyError:
         pass
@@ -46,7 +61,13 @@ def get_range(dataset, t0, t1, include_trihalides=False):
     #Get y values to fit
     if include_trihalides:
         try:
-            yvals = (2*dataset['CBr2'].values[tf0:tf1]+3*dataset['CNaBr3'].values[tf0:tf1])/2.0
+            # It's sorta unclear here what formula you're using. Formatting
+            # it up like this will help out, but it'd be sweet to see the
+            # formula. Also unclear why you use different data sets.
+            yvals = (
+                2*dataset['CBr2'].values[tf0:tf1] +
+                3*dataset['CNaBr3'].values[tf0:tf1]
+            )/2.0
         except KeyError:
             yvals = (2*dataset['CI2'].values[tf0:tf1]+3*dataset['CNaI3'].values[tf0:tf1])/2.0
     else:
@@ -60,6 +81,7 @@ def get_range(dataset, t0, t1, include_trihalides=False):
         return 0
     
     return xvals, yvals
+
 
 def get_rate_constant(dataset, t0, t1, order):
     """
@@ -89,6 +111,8 @@ def get_rate_constant(dataset, t0, t1, order):
         return (slope, intercept, r_value**2)
     elif order == 1:
         slope, intercept, r_value, p_value, std_err = stats.linregress(xvals, np.log(yvals))
+        # Establish a max line length and stick to it. Mine is 80 chars,
+        # line above is 93. Your editor should have an option to do this.
         return (slope, intercept, r_value**2)
     elif order == 2:
         slope, intercept, r_value, p_value, std_err = stats.linregress(xvals, 1/yvals)
@@ -96,8 +120,7 @@ def get_rate_constant(dataset, t0, t1, order):
     else:
         print 'Invalid reaction order!'
         return 0
-        
-        
+
         
 def compare_timerange(dataset, starttime, timerange, order, plot=True):
     """
@@ -133,49 +156,57 @@ def compare_timerange(dataset, starttime, timerange, order, plot=True):
         if plot:
             ax1.plot(xvals, yvals, 'x')
             ax1.set_ylabel('[X] (M)')
+
         for i in range(len(slopes)):
             if plot:
                 ax1.plot(xvals, linear(xvals, slopes[i], intercepts[i]), color = 'r', alpha=0.4)
                 ax2.plot(timerange[i], np.log(-slopes[i]), 'o-', color='r')
+
         return np.log(-slopes)
     
     elif order == 1:
         if plot:
             ax1.plot(xvals, np.log(yvals), 'x')
             ax1.set_ylabel('ln[X]')
+
         for i in range(len(slopes)):
             if plot:
                 ax1.plot(xvals, linear(xvals, slopes[i], intercepts[i]), color = 'r', alpha=0.4)
                 ax2.plot(timerange[i], np.log(-slopes[i]), 'o-', color='r')
+
         return np.log(-slopes)
         
     elif order == 2:
         if plot:
             ax1.plot(xvals, 1/(yvals), 'x')
             ax1.set_ylabel(r'1/[X] (M$^{\rm -1}$)')
+
         for i in range(len(slopes)):
             if plot:
                ax1.plot(xvals, linear(xvals, slopes[i], intercepts[i]), color = 'r', alpha=0.4)
                ax2.plot(timerange[i], np.log(slopes[i]), 'o-', color='r')
-        return np.log(slopes)
-        
-def arrhenius_plot(datasets, temperatures, starttime, timerange, order, plotfits=False):
-   """
-   
-   """
 
-   f, ax0 = plt.subplots(1)
-   ax0.set_xlabel('1/T (1/K)')
-   ax0.set_ylabel('ln(k)')
-   for i in range(len(datasets)):
+        return np.log(slopes)
+
+
+def arrhenius_plot(datasets, temperatures, starttime, timerange, order, plotfits=False):
+    # Define important constants for the whole file outside all the
+    # functions, and ones only important to the function inside the function
+    # e.g. X_LABEL = '1/T (1/K)'
+    f, ax0 = plt.subplots(1)
+    ax0.set_xlabel('1/T (1/K)')
+    ax0.set_ylabel('ln(k)')
+
+    for i in range(len(datasets)):
        logk = compare_timerange(datasets[i], starttime, timerange, order, plotfits)
-       ax0.plot(1/((temperatures[i])*np.ones(len(timerange))), logk, 'o-')
+       ax0.plot(
+           1/(temperatures[i]*np.ones(len(timerange))),
+           logk,
+           'o-'
+       )
+
 
 def arrhenius_plot_multi(datasets, colors, temperatures, starttime, timerange, order):
-   """
-   
-   """
-   
    for i in range(len(datasets)):
        logk = compare_timerange(datasets[i], starttime, timerange, order, False)
        plt.plot(1/((temperatures[i])*np.ones(len(timerange))), logk, 'o-', color=colors)
@@ -183,6 +214,7 @@ def arrhenius_plot_multi(datasets, colors, temperatures, starttime, timerange, o
 
 def plot_all(datasets, order):
     t0 = 0
+
     if order == 0:
         plt.figure()
         plt.xlabel('Time (min)')
@@ -198,6 +230,7 @@ def plot_all(datasets, order):
     else:
         print 'Invalid reaction order!'
         return 0
+
     for i in datasets:
         t1 = len(i['time (min)'])
         x, y = get_range(i, t0, t1-1)
