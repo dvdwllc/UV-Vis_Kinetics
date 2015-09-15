@@ -67,7 +67,10 @@ plt.legend()
 
 
 
-def gauss5(WL, h1, h2, l2, w2, h3, l3, w3):
+def gauss5(WL, 
+           h1, 
+           h2, l2, w2, 
+           h3, l3, w3):
     """
     gauss5(x, h1, h2, l2, w2, h3, l3, w3)
     
@@ -109,13 +112,17 @@ L2 = np.argwhere(WLs > 650.0)[0][0]
 
 xvals, yvals = WLs[L1:L2], train1[len(train1_t)-1][1:].values[L1:L2]
 
-NaBr3_p0 = (0.3, 1.0, 400, 20, 2.5, 340, 20) #Initial values for curve_fit
+NaBr3_p0 = (0.3, 
+            1.0, 400, 20, 
+            2.5, 340, 20) #Initial values for curve_fit
 
-g5opt, g5cov = curve_fit(gauss5, xvals, yvals, NaBr3_p0) #optimize NaBr3 parameters
+#optimize NaBr3 parameters
+g5opt, g5cov = curve_fit(gauss5, xvals, yvals, NaBr3_p0) 
 
-NaBr3_fit = gauss5(xvals, g5opt[0], g5opt[1], 
-                        g5opt[2], g5opt[3], g5opt[4], 
-                        g5opt[5], g5opt[6])
+NaBr3_fit = gauss5(xvals, 
+                   g5opt[0], 
+                   g5opt[1], g5opt[2], g5opt[3], 
+                   g5opt[4], g5opt[5], g5opt[6])
 
 g1 = (spec.gaussian(xvals, g5opt[1], g5opt[2], g5opt[3])) #show each individual peak
 g2 = (spec.gaussian(xvals, g5opt[4], g5opt[5], g5opt[6]))
@@ -176,19 +183,27 @@ ax2.set_ylabel('hNaBr$_3$ (arb.)')
 
 for i in range(len(train2_t)):
     xvals, yvals = WLs[L1:L2], train2[i][1:].values[L1:L2]
-
-    train2_opt, train2_cov = curve_fit(gauss5_scale, xvals, yvals) #optimize parameters
+    
+    #optimize parameters
+    train2_opt, train2_cov = curve_fit(gauss5_scale, xvals, yvals) 
+    
+    #add values to appropriate arrays
     (hBr2[i], hNaBr3[i]) = train2_opt
     
-    fit = gauss5_scale(xvals, train2_opt[0], train2_opt[1]) #compute the fitted spectrum
-
+    #compute the fitted spectrum
+    fit = gauss5_scale(xvals, train2_opt[0], train2_opt[1]) 
+    
+    #plot data and fit for each spectrum
     ax1.plot(xvals, yvals, 'x')
     ax1.plot(xvals, fit, color='r')
     
-
+#compute [NaBr3] for all spectra
 NaBr3_conc = Br2_conc_i * (1.0 - hBr2)
 
+#fit calibration line to data
 line, cov = curve_fit(spec.linear, NaBr3_conc, hNaBr3)
+
+#plot calibration points ad line of best fit
 ax2.plot(NaBr3_conc, hNaBr3, 'x')
 ax2.plot(NaBr3_conc, spec.linear(NaBr3_conc, line[0], line[1]))
 
@@ -211,11 +226,13 @@ def get_concs(dataset):
     _______
     time, Br2 concentration (M), NaBr3 concentration (M) (tuple of three NumPy arrays)
     """
-    time = dataset.iloc[[0]].values[0]/60 #get time values from datafile
+    #get time values from datafile
+    time = dataset.iloc[[0]].values[0]/60 
     
     low, high = 360, 650 #lower and upper wavelengths for fit
     
-    L1 = np.argwhere(WLs > low)[0][0] #set upper and lower bounds
+    #set upper and lower bounds
+    L1 = np.argwhere(WLs > low)[0][0] 
     L2 = np.argwhere(WLs > high)[0][0]
 
     hbr2, hnabr3 = np.zeros((2, len(time))) #empty arrays for fitted parameters
@@ -229,11 +246,16 @@ def get_concs(dataset):
     for i in range(len(time)):
         xvals, yvals = WLs[L1:L2], dataset[i][1:].values[L1:L2]
         
-        g5Sopt, g5Scov = curve_fit(gauss5_scale, xvals, yvals) #optimize parameters
+        #optimize parameters
+        g5Sopt, g5Scov = curve_fit(gauss5_scale, xvals, yvals) 
         
-        fit = gauss5_scale(xvals, g5Sopt[0], g5Sopt[1]) #compute the fitted spectrum
+        #compute the fitted spectrum
+        fit = gauss5_scale(xvals, g5Sopt[0], g5Sopt[1]) 
         
-        (hbr2[i], hnabr3[i]) = g5Sopt 
+        #add values to appropriate arrays
+        (hbr2[i], hnabr3[i]) = g5Sopt
+        
+        #plot data and fit for each spectrum
         plt.plot(xvals, yvals, 'x', color='black', alpha=0.4)
         plt.plot(xvals, fit, color='r')
         
@@ -241,10 +263,10 @@ def get_concs(dataset):
     return (time, Br2_conc_i*hbr2, hnabr3/line[0])
 
 
-#Predict Br2 and NaBr3 concentrations from a full kinetics run!
+#Predict Br2 and NaBr3 concentrations for all spectra in calibration
 (time, cBr2, cNaBr3) = get_concs(train1)
 
-#plot Conc. vs Time for the kinetics run!
+#plot Conc. vs Time for the calibration run
 plt.figure()
 plt.title(r'Predicted Br$_{\rm 2}$ and NaBr$_{\rm 3}$ Concentrations')
 plt.xlabel('Time (min)')
@@ -258,8 +280,8 @@ plt.show()
 
 
 def write_concs(run_concs, name):
-	"""
-	write_concs(run_concs, name)
+    """
+    write_concs(run_concs, name)
 	
 	Write time, [Br2], [NaBr3] as space-separated values to a file ('name.txt')
 	
@@ -269,17 +291,14 @@ def write_concs(run_concs, name):
 	
 	name: a string in quotes. This is the prefix of the file to be written. 
 			'.txt' will be appended to the end of the prefix.
-	
-	Returns
-	-------
-	zero.
 	"""
-	with open(name+'.txt', 'w') as outfile:
+    with open(name+'.txt', 'w') as outfile:
 		for i in range(len(run_concs[0])):
-			outfile.write(str(run_concs[0][i])+' '+
-						  str(run_concs[1][i])+' '+
-						  str(run_concs[2][i])+'\n')
-	return 0
+		    outfile.write(str(run_concs[0][i])+' '+
+		                  str(run_concs[1][i])+' '+
+		                  str(run_concs[2][i])+'\n')
+		                  
+
 
 
 
