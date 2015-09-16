@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import spectralFunctions as spec
+import tools.spectral_functions as spec
 from scipy.optimize import curve_fit
 
 """
@@ -18,14 +18,14 @@ intensity contribution of each peakshape to the observed absorption spectrum.
 """
 
 #load training data as pandas DataFrames
-train1 = pd.read_csv('TRAIN1.TXT', encoding='utf-16', skiprows=5, sep='\t')
-train2 = pd.read_csv('TRAIN2.TXT', encoding='utf-16', skiprows=5, sep='\t')
+train1 = pd.read_csv('data/TRAIN1.TXT', encoding='utf-16', skiprows=5, sep='\t')
+train2 = pd.read_csv('data/TRAIN2.TXT', encoding='utf-16', skiprows=5, sep='\t')
 
 #We are working with Bromine and Sodium Tribromide, so label accordingly
 HALOGEN_LABEL = '[Br2] (M)'
 TRIHALIDE_LABEL = '[NaBr3] (M)'
 TIME_LABEL = 'Time (min)'
-ABSROBANCE_LABEL = 'Absorbance (Arb.)'
+ABSORBANCE_LABEL = 'Absorbance (Arb.)'
 WAVELENGTH_LABEL = 'Wavelength (nm)'
 
 #transpose data (for clarity)
@@ -43,7 +43,7 @@ WLs = train1.index.values[1:].astype(float)
 #set upper and lower bounds for first training set
 low, high = 320.0, 650.0
 L1 = np.argwhere(WLs > low)[0][0] 
-L2 = np.argwhere(WLs > low)[0][0]
+L2 = np.argwhere(WLs > high)[0][0]
 
 xvals, yvals = WLs[L1:L2], train1[0][1:].values[L1:L2]
 
@@ -318,8 +318,8 @@ def write_concs(run_concs, name):
     	outfile.write('%s, %s, %s\n' % (TIME_LABEL, 
     									HALOGEN_LABEL, 
     									TRIHALIDE_LABEL))
-		for i in range(len(run_concs[0])):
-		    outfile.write(str(run_concs[0][i])+','+
+    	for i in range(len(run_concs[0])):
+    		outfile.write(str(run_concs[0][i])+','+
 		                  str(run_concs[1][i])+','+
 		                  str(run_concs[2][i])+'\n')
 		                  
@@ -329,11 +329,11 @@ def write_concs(run_concs, name):
 
 if __name__ == '__main__':
     #Predict concentrations from other datasets
-    run1_17C = pd.read_csv('run1_17C.TXT', 
+    run1_17C = pd.read_csv('data/run1_17C.TXT', 
     					   encoding='utf-16', skiprows=5, sep='\t')
-    run2_25C = pd.read_csv('run2_25C.TXT', 
+    run2_25C = pd.read_csv('data/run2_25C.TXT', 
     					   encoding='utf-16', skiprows=5, sep='\t')
-    run3_35C = pd.read_csv('run3_35C.TXT', 
+    run3_35C = pd.read_csv('data/run3_35C.TXT', 
     					   encoding='utf-16', skiprows=5, sep='\t')
 
 
@@ -341,7 +341,7 @@ if __name__ == '__main__':
     run2_25C_concs = predict_concs_from_spectra(run2_25C.transpose())
     run3_35C_concs = predict_concs_from_spectra(run3_35C.transpose())
 
-    write_concs(run1_17C_concs, 'run1_17C_concs')
-    write_concs(run2_25C_concs, 'run2_25C_concs')
-    write_concs(run3_35C_concs, 'run3_35C_concs')
+    write_concs(run1_17C_concs, 'data/run1_17C_concs')
+    write_concs(run2_25C_concs, 'data/run2_25C_concs')
+    write_concs(run3_35C_concs, 'data/run3_35C_concs')
     

@@ -1,4 +1,4 @@
-import kinetics
+import tools.kinetics
 import pandas as pd
 import numpy as np
 
