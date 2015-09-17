@@ -307,6 +307,9 @@ if __name__ == '__main__':
     run2_25C_concs = predict_concs_from_spectra(run2_25C, run2_25C_t)
     run3_35C_concs = predict_concs_from_spectra(run3_35C, run2_35C_t)
 
-    data_io.write_concs(run1_17C_concs, 'data/run1_17C_concs')
-    data_io.write_concs(run2_25C_concs, 'data/run2_25C_concs')
-    data_io.write_concs(run3_35C_concs, 'data/run3_35C_concs')
+    data_io.write_concs(run1_17C_concs, TIME_LABEL, HALOGEN_LABEL,
+                        TRIHALIDE_LABEL'data/run1_17C_concs')
+    data_io.write_concs(run2_25C_concs, TIME_LABEL, HALOGEN_LABEL,
+                        TRIHALIDE_LABEL'data/run2_25C_concs')
+    data_io.write_concs(run3_35C_concs, TIME_LABEL, HALOGEN_LABEL,
+                        TRIHALIDE_LABEL'data/run3_35C_concs')

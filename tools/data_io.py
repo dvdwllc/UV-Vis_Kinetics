@@ -51,7 +51,7 @@ def clean_agilent_uvvis_data(filename):
 
     return df, df_t
 
-def write_concs(run_concs, name):
+def write_concs(run_concs, TIME_LABEL, HALOGEN_LABEL, TRIHALIDE_LABEL, name):
     """
     write_concs(run_concs, name)
 
