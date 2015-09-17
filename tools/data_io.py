@@ -47,7 +47,7 @@ def clean_agilent_uvvis_data(filename):
 
     df = df.transpose()
 
-    df_t = df.iloc[[0]].values[0]
+    df_t = df.iloc[[0]].values[0]/60.0
 
     return df, df_t
 
