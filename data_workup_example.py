@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import tools.spectral_functions as spec
 from scipy.optimize import curve_fit
+
+import tools.spectral_functions as spec
 
 """
 Here we train a collection of gaussian-like functions to UV-Vis absorption 
@@ -313,9 +314,9 @@ def write_concs(run_concs, name):
         '.txt' will be appended to the end of the prefix.
     """
     with open(name + '.txt', 'w') as outfile:
-        outfile.write('%s, %s, %s\n' % (TIME_LABEL,
-                                        HALOGEN_LABEL,
-                                        TRIHALIDE_LABEL))
+        outfile.write('%s,%s,%s\n' % (TIME_LABEL,
+                                      HALOGEN_LABEL,
+                                      TRIHALIDE_LABEL))
         for i in range(len(run_concs[0])):
             outfile.write(str(run_concs[0][i]) + ',' +
                           str(run_concs[1][i]) + ',' +

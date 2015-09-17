@@ -1,13 +1,15 @@
-import tools.kinetics
 import pandas as pd
 import numpy as np
+
+import tools.kinetics as kinetics
+
 
 
 # define strings here. Also what does this file do?
 
-run1_17C = pd.read_csv('17C_concs.txt')
-run2_25C = pd.read_csv('25C_concs.txt')
-run3_35C = pd.read_csv('35C_concs.txt')
+run1_17C = pd.read_csv('data/run1_17C_concs.txt')
+run2_25C = pd.read_csv('data/run2_25C_concs.txt')
+run3_35C = pd.read_csv('data/run3_35C_concs.txt')
 
 runs = (run1_17C, run2_25C, run3_35C)
 temperatures = np.array((17.5, 25.0, 35.0))+273.15
