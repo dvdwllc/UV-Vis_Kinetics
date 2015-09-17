@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 import tools.spectral_functions as spec
+import tools.data_i0 as data_io
 
 """
 Here we train a collection of gaussian-like functions to UV-Vis absorption 
@@ -18,9 +19,9 @@ species in an unknown solution can be determined by finding the optimum
 intensity contribution of each peakshape to the observed absorption spectrum.
 """
 
-# load training data as pandas DataFrames
-train1 = pd.read_csv('data/TRAIN1.TXT', encoding='utf-16', skiprows=5, sep='\t')
-train2 = pd.read_csv('data/TRAIN2.TXT', encoding='utf-16', skiprows=5, sep='\t')
+# load training data as pandas DataFrames and measurement time as arrays
+train1, train1_t = data_io.clean_agilent_uvvis_data('data/TRAIN1.TXT')
+train2, train2_t = data_io.clean_agilent_uvvis_data('data/TRAIN2.TXT')
 
 # We are working with Bromine and Sodium Tribromide, so label accordingly
 HALOGEN_LABEL = '[Br2] (M)'
@@ -28,12 +29,6 @@ TRIHALIDE_LABEL = '[NaBr3] (M)'
 TIME_LABEL = 'Time (min)'
 ABSORBANCE_LABEL = 'Absorbance (Arb.)'
 WAVELENGTH_LABEL = 'Wavelength (nm)'
-
-# transpose data (for clarity)
-train1, train2 = train1.transpose(), train2.transpose()
-
-# Get measurement times from first row
-train1_t, train2_t = train1.iloc[[0]].values[0], train2.iloc[[0]].values[0]
 
 # get wavelength values from first column
 WLs = train1.index.values[1:].astype(float)
@@ -216,7 +211,7 @@ for i in range(len(train2_t)):
     ax1.plot(xvals, fit, color='r')
 
 # compute [NaBr3] for all spectra
-NaBr3_conc = Br2_conc_i * (1.0 - hBr2)
+NaBr3_conc = Br2_conc_i * (1.0 - hBr2/hbr2[0])
 
 # fit calibration line to data
 line, cov = curve_fit(spec.linear, NaBr3_conc, hNaBr3)
@@ -228,7 +223,7 @@ ax2.plot(NaBr3_conc, spec.linear(NaBr3_conc, line[0], line[1]))
 """##############PREDICT##################"""
 
 
-def predict_concs_from_spectra(dataset):
+def predict_concs_from_spectra(dataset, time):
     """
     get_concs(dataset)
     
@@ -245,8 +240,7 @@ def predict_concs_from_spectra(dataset):
     (time, Br2 concentration (M), NaBr3 concentration (M))
     	(tuple of three NumPy arrays)
     """
-    # get time values from datafile
-    time = dataset.iloc[[0]].values[0] / 60
+    WLs = dataset.index.values[1:].astype(float)
 
     # lower and upper wavelengths for fit
     low, high = 360, 650
@@ -279,7 +273,7 @@ def predict_concs_from_spectra(dataset):
         plt.plot(xvals, yvals, 'x', color='black', alpha=0.4)
         plt.plot(xvals, fit, color='r')
 
-    return (time, Br2_conc_i * hbr2, hnabr3 / line[0])
+    return (time, Br2_conc_i * (hbr2/hbr2[0]), hnabr3 / line[0])
 
 
 # Predict Br2 and NaBr3 concentrations for all spectra in calibration
@@ -300,42 +294,19 @@ plt.legend()
 plt.show()
 
 
-def write_concs(run_concs, name):
-    """
-    write_concs(run_concs, name)
-
-    Write time, [Br2], [NaBr3] as space-separated values to a file ('name.txt')
-
-    Parameters
-    ----------
-    run_concs: a tuple containing three NumPy arrays: time, [Br2], [NaBr3]
-
-    name: a string in quotes. This is the prefix of the file to be written.
-        '.txt' will be appended to the end of the prefix.
-    """
-    with open(name + '.txt', 'w') as outfile:
-        outfile.write('%s,%s,%s\n' % (TIME_LABEL,
-                                      HALOGEN_LABEL,
-                                      TRIHALIDE_LABEL))
-        for i in range(len(run_concs[0])):
-            outfile.write(str(run_concs[0][i]) + ',' +
-                          str(run_concs[1][i]) + ',' +
-                          str(run_concs[2][i]) + '\n')
-
-
 if __name__ == '__main__':
     # Predict concentrations from other datasets
-    run1_17C = pd.read_csv('data/run1_17C.TXT',
-                           encoding='utf-16', skiprows=5, sep='\t')
-    run2_25C = pd.read_csv('data/run2_25C.TXT',
-                           encoding='utf-16', skiprows=5, sep='\t')
-    run3_35C = pd.read_csv('data/run3_35C.TXT',
-                           encoding='utf-16', skiprows=5, sep='\t')
+    run1_17C, run1_17C_t = \
+        data_io.clean_agilent_uvvis_data('data/run1_17C.TXT')
+    run2_25C, run2_25C_t = \
+        data_io.clean_agilent_uvvis_data('data/run2_25C.TXT')
+    run3_35C, run2_35C_t = \
+        data_io.clean_agilent_uvvis_data('data/run3_35C.TXT')
 
-    run1_17C_concs = predict_concs_from_spectra(run1_17C.transpose())
-    run2_25C_concs = predict_concs_from_spectra(run2_25C.transpose())
-    run3_35C_concs = predict_concs_from_spectra(run3_35C.transpose())
+    run1_17C_concs = predict_concs_from_spectra(run1_17C, run1_17C_t)
+    run2_25C_concs = predict_concs_from_spectra(run2_25C, run2_25C_t)
+    run3_35C_concs = predict_concs_from_spectra(run3_35C, run2_35C_t)
 
-    write_concs(run1_17C_concs, 'data/run1_17C_concs')
-    write_concs(run2_25C_concs, 'data/run2_25C_concs')
-    write_concs(run3_35C_concs, 'data/run3_35C_concs')
+    data_io.write_concs(run1_17C_concs, 'data/run1_17C_concs')
+    data_io.write_concs(run2_25C_concs, 'data/run2_25C_concs')
+    data_io.write_concs(run3_35C_concs, 'data/run3_35C_concs')
