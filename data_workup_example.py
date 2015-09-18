@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 import tools.spectral_functions as spec
-import tools.data_i0 as data_io
+import tools.data_io as data_io
 
 """
 Here we train a collection of gaussian-like functions to UV-Vis absorption 
@@ -211,7 +211,7 @@ for i in range(len(train2_t)):
     ax1.plot(xvals, fit, color='r')
 
 # compute [NaBr3] for all spectra
-NaBr3_conc = Br2_conc_i * (1.0 - hBr2/hbr2[0])
+NaBr3_conc = Br2_conc_i * (1.0 - hBr2/hBr2[0])
 
 # fit calibration line to data
 line, cov = curve_fit(spec.linear, NaBr3_conc, hNaBr3)
@@ -277,7 +277,7 @@ def predict_concs_from_spectra(dataset, time):
 
 
 # Predict Br2 and NaBr3 concentrations for all spectra in calibration
-(time, cBr2, cNaBr3) = predict_concs_from_spectra(train1)
+(time, cBr2, cNaBr3) = predict_concs_from_spectra(train1, train1_t)
 
 # plot Conc. vs Time for the calibration run
 FIGTITLE = 'Predicted %s and %s Concentrations' % (HALOGEN_LABEL,
@@ -308,8 +308,8 @@ if __name__ == '__main__':
     run3_35C_concs = predict_concs_from_spectra(run3_35C, run2_35C_t)
 
     data_io.write_concs(run1_17C_concs, TIME_LABEL, HALOGEN_LABEL,
-                        TRIHALIDE_LABEL'data/run1_17C_concs')
+                        TRIHALIDE_LABEL,'data/run1_17C_concs')
     data_io.write_concs(run2_25C_concs, TIME_LABEL, HALOGEN_LABEL,
-                        TRIHALIDE_LABEL'data/run2_25C_concs')
+                        TRIHALIDE_LABEL,'data/run2_25C_concs')
     data_io.write_concs(run3_35C_concs, TIME_LABEL, HALOGEN_LABEL,
-                        TRIHALIDE_LABEL'data/run3_35C_concs')
+                        TRIHALIDE_LABEL,'data/run3_35C_concs')
