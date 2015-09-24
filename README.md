@@ -3,7 +3,7 @@ This repository contains a subset of the data analysis tools that I built for my
 <li><em>tools</em>: contains scripts for importing/exporting data, as well as plotting and analysis tools for comparing many datasets.</li>
 <li><em>data</em>: contains raw and processed datasets.</li>
 </ul>
-There are also and iPython notebook and two example scripts in the main directory, which provide a representative example of how the spectral fitting, machine learning, and data analysis are performed:
+There are also an iPython notebook and two example scripts in the main directory, which provide a representative example of how the spectral fitting, machine learning, and data analysis are performed:
 <ul>
 <li><em>problem_statement.ipynb</em>: Coming soon.
 <li><em>data_workup_example.py</em>: A self-contained solution to the problem outlined in <em>problem_statement.ipynb</em></li>
