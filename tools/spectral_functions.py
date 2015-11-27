@@ -1,4 +1,5 @@
 import numpy as np
+import tools.spectral_functions
 
 
 def gaussian1(WL, h1, l1, w1):
