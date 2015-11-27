@@ -16,6 +16,8 @@ NAI3_LABEL = '[NaI3] (M)'
 ZERO_ORDER_YLABEL = '[X] (M)'
 FIRST_ORDER_YLABEL = 'ln[X]'
 SECOND_ORDER_YLABEL = r'[X]$^{\rm -1}$ (M$^{\rm -1}$)'
+ARRHENIUS_X_LABEL = '1/T (1/K)'
+ARRHENIUS_Y_LABEL = 'ln(k)'
 
 
 def get_time_and_conc_in_range(dataset, t0, t1, include_trihalides=False):
@@ -43,7 +45,7 @@ def get_time_and_conc_in_range(dataset, t0, t1, include_trihalides=False):
     # get time between lower and upper time bounds as xvals
     try:
         tf0 = np.argwhere(dataset[TIME_LABEL].values > t0)[0][0]
-        tf1 = np.argwhere(dataset[TIME_LABEL].values == t1)[0][0]
+        tf1 = np.argwhere(dataset[TIME_LABEL].values >= t1)[0][0]
         xvals = dataset[TIME_LABEL].values[tf0:tf1]
     except IndexError as e:
         print e  # if either bound is invalid
@@ -86,50 +88,49 @@ def get_time_and_conc_in_range(dataset, t0, t1, include_trihalides=False):
 
 def calc_rate_constant(xvals, yvals, order):
     """
-    Performs a linear fit over a specified time range (t0:t1) to
-    extract rate constants from zero, first-, or second-order kinetics plot.
+    Extracts rate constants from zero, first-, or second-order kinetics plot.
 
     Parameters
     ----------
-        dataset: a Pandas dataframe containing time, halogen concentration,
-                    and trihalide concentration as columns.
+        xvals: time array
 
-        t0, t1: start and end times for the linear fit (floats)
-
-        include_trihalides: Boolean. Whether or not to account for trihalide
-                    concentration in the fit.
+        yvals: concentration array
 
         order: Int. specifies the desired kinetics plots
                     (zero, first, or second).
 
     Returns
     -------
-        tuple: (slope, intercept, r-squared)
+        tuple: (slope, intercept, r-squared, std_error)
     """
 
     # Perform the fit to the appropriate data.
     if order == 0:
         (slope, intercept, r_value, p_value, std_err) = (
             stats.linregress(xvals, yvals))
-        return (slope, intercept, r_value ** 2)
+        return slope, intercept, r_value ** 2, std_err
 
     elif order == 1:
         (slope, intercept, r_value, p_value, std_err) = (
             stats.linregress(xvals, np.log(yvals)))
-        return (slope, intercept, r_value ** 2)
+        return slope, intercept, r_value ** 2, std_err
 
     elif order == 2:
         (slope, intercept, r_value, p_value, std_err) = (
             stats.linregress(xvals, 1 / yvals))
-        return (slope, intercept, r_value ** 2)
+        return slope, intercept, r_value ** 2, std_err
 
     else:
         print 'Invalid reaction order!'
         return 0
 
 
-def compare_ratek_vs_timerange(dataset, starttime,
-                               timerange, order, plot=True):
+def compare_ratek_vs_timerange(
+        dataset,
+        starttime,
+        timerange,
+        order,
+        plot=True):
     """
     Calculates the rate constant for a zero, first-, or second-order
     kinetics plot over multiple different time ranges. Plots the full
@@ -140,7 +141,7 @@ def compare_ratek_vs_timerange(dataset, starttime,
         dataset: a Pandas dataframe containing time, halogen concentration,
                     and trihalide concentration as columns.
 
-        starttime: how early in the run to start the fit (defaults to 0).
+        starttime: how early in the run to start the fit.
 
         timerange: a range of times over which to perform the fit.
 
@@ -150,7 +151,7 @@ def compare_ratek_vs_timerange(dataset, starttime,
     """
 
     # create empty lists for fitted values
-    slopes, intercepts, r2s = np.zeros((3, len(timerange)))
+    slopes, intercepts, r2s, stderrs = np.zeros((4, len(timerange)))
 
     # get raw data
     n_times = len(dataset[TIME_LABEL]) - 1
@@ -167,7 +168,7 @@ def compare_ratek_vs_timerange(dataset, starttime,
         end_index = np.argwhere(xvals > timerange[i])[0][0]
 
         # compute fit
-        (slopes[i], intercepts[i], r2s[i]) = (
+        (slopes[i], intercepts[i], r2s[i], stderrs[i]) = (
             calc_rate_constant(xvals[start_index:end_index],
                                yvals[start_index:end_index], order))
 
@@ -194,7 +195,7 @@ def compare_ratek_vs_timerange(dataset, starttime,
                 )
                 ax2.plot(timerange[i], np.log(-slopes[i]), 'o-', color='r')
 
-        return np.log(-slopes)
+        return -slopes, -stderrs
 
     elif order == 1:
         if plot:
@@ -213,7 +214,7 @@ def compare_ratek_vs_timerange(dataset, starttime,
                 )
                 ax2.plot(timerange[i], np.log(-slopes[i]), 'o-', color='r')
 
-        return np.log(-slopes)
+        return -slopes, -stderrs
 
     elif order == 2:
         if plot:
@@ -232,7 +233,7 @@ def compare_ratek_vs_timerange(dataset, starttime,
                 )
                 ax2.plot(timerange[i], np.log(slopes[i]), 'o-', color='r')
 
-        return np.log(slopes)
+        return slopes, stderrs
 
 
 def arrhenius_plot(
@@ -269,32 +270,28 @@ def arrhenius_plot(
             dataset and timerange. defaults to False.
     """
 
-    ARRHENIUS_X_LABEL = '1/T (1/K)'
-    ARRHENIUS_Y_LABEL = 'ln(k)'
-
     f, ax0 = plt.subplots(1)
     ax0.set_xlabel(ARRHENIUS_X_LABEL)
     ax0.set_ylabel(ARRHENIUS_Y_LABEL)
 
     for i in range(len(datasets)):
-        logk = compare_ratek_vs_timerange(
+        k, errs = compare_ratek_vs_timerange(
             datasets[i],
             starttime,
             timerange,
             order,
             plotfits
         )
-        ax0.plot(
+        ax0.errorbar(
             1.0 / (temperatures[i] * np.ones(len(timerange))),
-            logk,
-            'o-'
+            np.log(k), np.log(errs)
         )
 
     plt.show()
 
 
 def arrhenius_plot_multi(
-        datasets, colors, symbols, temperatures, starttime, timerange, order
+        datasets, temperatures, starttime, timerange, order, plot=True
 ):
     """
     Same as arrhenius_plot, but does not initiate a new figure. This allows
@@ -316,7 +313,7 @@ def arrhenius_plot_multi(
             collected. (must be in the same order as datasets).
 
         starttime: float. The time at which to begin the linear fit to the kinetics
-            data.
+            data
 
         timerange: list/tuple/array containing times at which to end the
             linear fit to the kinetics data.
@@ -328,21 +325,71 @@ def arrhenius_plot_multi(
         plotfits: Boolean. Whether or not to plot the data and fits for each
             dataset and timerange. defaults to False.
     """
+    temps, ks, errs = np.zeros((3,len(datasets)*len(timerange)))
+
+    stepsz = len(timerange)
+
     for i in range(len(datasets)):
-        logk = compare_ratek_vs_timerange(
+        temps[i*stepsz:i*stepsz+stepsz] = temperatures[i]
+        ks[i*stepsz:i*stepsz+stepsz], errs[i*stepsz:i*stepsz+stepsz] = \
+            compare_ratek_vs_timerange(
+                datasets[i],
+                starttime,
+                timerange,
+                order,
+                False)
+
+    if plot:
+
+        f, ax0 = plt.subplots(1)
+        ax0.set_xlabel(ARRHENIUS_X_LABEL)
+        ax0.set_ylabel(ARRHENIUS_Y_LABEL)
+        ax0.errorbar(1/temps, np.log(ks), np.log(errs), fmt='o')
+
+    return temps, ks, errs
+
+
+def get_rate_constants_v_time(datasets, starttime, endtime, order):
+    """
+    Computes the rate constants for a list of reactions.
+
+    Parameters
+    ----------
+        datasets: list/tuple/array of Pandas DataFrames.
+            Each DataFrame contains a set kinetics data collected at
+            a constant, known temperature
+
+        starttime: float. The time at which to begin the linear fit to the
+        kinetics data.
+
+        endtime: float. The time at which to end the linear fit to the
+        kinetics data.
+
+        order: integer (0, 1 or 2).
+        The order of the kinetics plot from which the rate constant is
+        to be determined (zero, first, or second order).
+
+    Returns
+    -------
+        NumPy array of natural log of rate constants
+    """
+    rate_constants, errs = np.zeros((2, len(datasets)))
+
+    for i in range(len(datasets)):
+        k, err = compare_ratek_vs_timerange(
             datasets[i],
             starttime,
-            timerange,
+            endtime,
             order,
-            False)
-        plt.plot(
-            1 / ((temperatures[i]) * np.ones(len(timerange))),
-            logk,
-            symbols,
-            color=colors)
+            False
+        )
+        rate_constants[i], errs[i] = k, err
 
+    return rate_constants, errs
 
-def plot_all(datasets, order):
+cm = plt.get_cmap('coolwarm')
+
+def plot_all(datasets, temperatures, order):
     """
     Plots concentration data and time for each dataset on a single graph
     according to the specified reaction order. This allows for
@@ -377,15 +424,30 @@ def plot_all(datasets, order):
         print 'Invalid reaction order!'
         return 0
 
-    for i in datasets:
-        n_times = len(i[TIME_LABEL]) - 1
-        t1 = i[TIME_LABEL][n_times]
-        x, y = get_time_and_conc_in_range(i, t0, t1)
+    for i in range(len(datasets)):
+        n_times = len(datasets[i][TIME_LABEL]) - 1
+        t1 = datasets[i][TIME_LABEL][n_times]
+        x, y = get_time_and_conc_in_range(datasets[i], t0, t1)
+        cl = cm((temperatures[i]-250)/70.0)
         if order == 0:
-            plt.plot(x, y, 'x')
+            plt.plot(x, y, 'x', color=cl)
         elif order == 1:
-            plt.plot(x, np.log(y), 'x')
+            plt.plot(x, np.log(y), 'x', color=cl)
         elif order == 2:
-            plt.plot(x, 1 / y, 'x')
+            plt.plot(x, 1 / y, 'x', color=cl)
 
     plt.show()
+    return
+    
+def plot_linearity_v_T(datasets, temperatures, order, starttime, endtime):
+    rsquared = np.ones(len(temperatures))
+    for i in range(len(datasets)):
+        if endtime > datasets[i][TIME_LABEL][len(datasets[i][TIME_LABEL])-1]:
+            tf = datasets[i][TIME_LABEL][len(datasets[i][TIME_LABEL])-1]
+        else:
+            tf = endtime
+        xvals, yvals = get_time_and_conc_in_range(datasets[i],starttime,tf,False)
+        _, _, rsquared[i], _ = calc_rate_constant(xvals, yvals, order)
+    
+    plt.plot(temperatures, rsquared, 'o-')
+    return
