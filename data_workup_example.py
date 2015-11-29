@@ -5,11 +5,12 @@ from scipy.optimize import curve_fit
 
 import tools.spectral_functions as spec
 import tools.data_io as data_io
+from tools.absorption_class import AbsorptionSpectrum, SecondSpectrum
 
 """
-Here we train a collection of gaussian-like functions to UV-Vis absorption 
-spectra collected on solutions of known bromine and sodium tribromide concentration
-over the wavelength range 360 to 650 nm. 
+Here we train a collection of gaussian-like functions to UV-Vis absorption
+spectra collected on solutions of known bromine and sodium tribromide
+concentration over the wavelength range 360 to 650 nm.
 
     *The pure bromine spectrum is represented by a sum of three gaussians.
     *The sodium tribromide spectrum is represented by a sum of two gaussians.
@@ -24,8 +25,8 @@ train1, train1_t = data_io.clean_agilent_uvvis_data('data/TRAIN1.TXT')
 train2, train2_t = data_io.clean_agilent_uvvis_data('data/TRAIN2.TXT')
 
 # We are working with Bromine and Sodium Tribromide, so label accordingly
-HALOGEN_LABEL = '[Br2] (M)'
-TRIHALIDE_LABEL = '[NaBr3] (M)'
+HALOGEN_LABEL = '[Br$_2$] (M)'
+TRIHALIDE_LABEL = '[NaBr$_3$] (M)'
 TIME_LABEL = 'Time (min)'
 ABSORBANCE_LABEL = 'Absorbance (Arb.)'
 WAVELENGTH_LABEL = 'Wavelength (nm)'
@@ -43,23 +44,24 @@ L2 = np.argwhere(WLs > high)[0][0]
 xvals, yvals = WLs[L1:L2], train1[0][1:].values[L1:L2]
 
 # Initial values for curve_fit
-p0_Br2 = (3.0, 280.0, 30.0,
+p0_Br2 = [3.0, 280.0, 30.0,
           0.7, 390.0, 20.0,
-          0.2, 460.0, 20.0, 0.02)
+          0.2, 460.0, 20.0]
+
+Br2_spectrum = AbsorptionSpectrum(3, p0_Br2)
 
 # optimize parameters
-Br2opt, Br2cov = curve_fit(spec.gaussian3, xvals, yvals, p0_Br2)
+Br2_spectrum.fit(xvals, yvals)
 
 # compute the fitted spectrum
-Br2_fit = spec.gaussian3(xvals, Br2opt[0],
-                         Br2opt[1], Br2opt[2], Br2opt[3],
-                         Br2opt[4], Br2opt[5], Br2opt[6],
-                         Br2opt[7], Br2opt[8], Br2opt[9])
+Br2_fit = Br2_spectrum.get_fit_vals(xvals)
 
 # show each individual peak
-g1, g2, g3 = (spec.gaussian(xvals, Br2opt[0], Br2opt[1], Br2opt[2]),
-              spec.gaussian(xvals, Br2opt[3], Br2opt[4], Br2opt[5]),
-              spec.gaussian(xvals, Br2opt[6], Br2opt[7], Br2opt[8]))
+Br2_pks = Br2_spectrum.peak_params
+
+g1, g2, g3 = (spec.gaussian1(xvals, Br2_pks[0], Br2_pks[1], Br2_pks[2], 0.0),
+              spec.gaussian1(xvals, Br2_pks[3], Br2_pks[4], Br2_pks[5], 0.0),
+              spec.gaussian1(xvals, Br2_pks[6], Br2_pks[7], Br2_pks[8], 0.0))
 
 # plot results
 plt.figure()
@@ -70,45 +72,6 @@ plt.plot(xvals, yvals, 'x', label='data')
 plt.plot(xvals, Br2_fit, color='r', label='fit')
 plt.plot(xvals, g1, xvals, g2, xvals, g3)
 plt.legend()
-
-
-def Br2_plus_2gaussians(WL,
-                        h1,
-                        h2, l2, w2,
-                        h3, l3, w3):
-    """
-    gauss5(x, h1, h2, l2, w2, h3, l3, w3)
-    
-    computes the predicted absorbance value for given wavelength and Br2 height,
-    with two additional Gaussian-like peaks to fit the NaBr3 peak contribtution.
-    
-    Parameters
-    ----------
-    WL: scalar
-        Wavelength in nm
-        
-    h1: scalar
-        Height of total Br2 spectrum
-        
-    h2, h3: scalar
-        NaBr3 peak heights in absorbance units
-        
-    w1, w2: scalar
-        NaBr3 peak widths in nm
-        
-    l1, l2: scalar
-        NaBr3 peak centers in nm
-    
-    Returns
-    -------
-    Predicted Absorbance: float
-    """
-    return (h1 * (Br2opt[0] * np.exp(-((WL - Br2opt[1]) ** 2) / (2 * Br2opt[2] ** 2)) +
-                  Br2opt[3] * np.exp(-((WL - Br2opt[4]) ** 2) / (2 * Br2opt[5] ** 2)) +
-                  Br2opt[6] * np.exp(-((WL - Br2opt[7]) ** 2) / (2 * Br2opt[8] ** 2))) +
-            h2 * np.exp(-((WL - l2) ** 2) / (2 * w2 ** 2)) +
-            h3 * np.exp(-((WL - l3) ** 2) / (2 * w3 ** 2)))
-
 
 """##########FIT SODIUM TRIBROMIDE SPECTRUM############"""
 
@@ -121,22 +84,18 @@ last_line = len(train1_t) - 1
 xvals, yvals = WLs[L1:L2], train1[last_line][1:].values[L1:L2]
 
 # Initial values for curve_fit
-NaBr3_p0 = (0.3,
-            1.0, 400, 20,
-            2.5, 340, 20)
+NaBr3_p0 = [1.0, 400, 20,
+            2.5, 340, 20]
 
 # optimize NaBr3 parameters
-g5opt, g5cov = curve_fit(Br2_plus_2gaussians, xvals, yvals, NaBr3_p0)
-
-# compute the predicted spectrum
-NaBr3_fit = Br2_plus_2gaussians(xvals,
-                                g5opt[0],
-                                g5opt[1], g5opt[2], g5opt[3],
-                                g5opt[4], g5opt[5], g5opt[6])
+NaBr3_spectrum = SecondSpectrum(Br2_spectrum, 2, NaBr3_p0)
+NaBr3_spectrum.fit_second_spectrum(xvals, yvals)
+NaBr3_fit = NaBr3_spectrum.get_fit_vals(xvals)
+NaBr3_pks = NaBr3_spectrum.peak_params
 
 # show each individual peak contributing to the spectrum
-g1 = (spec.gaussian(xvals, g5opt[1], g5opt[2], g5opt[3]))
-g2 = (spec.gaussian(xvals, g5opt[4], g5opt[5], g5opt[6]))
+g1 = spec.gaussian1(xvals, NaBr3_pks[1], NaBr3_pks[2], NaBr3_pks[3], 0.0)
+g2 = spec.gaussian1(xvals, NaBr3_pks[4], NaBr3_pks[5], NaBr3_pks[6], 0.0)
 
 # plot results
 plt.figure()
@@ -169,11 +128,8 @@ def variable_Br2_NaBr3_spectrum(WL, hBr2, hNaBr3):
     -------
     Predicted Absorbance: float
     """
-    return (hBr2 * (Br2opt[0] * np.exp(-((WL - Br2opt[1]) ** 2) / (2 * Br2opt[2] ** 2)) +
-                    Br2opt[3] * np.exp(-((WL - Br2opt[4]) ** 2) / (2 * Br2opt[5] ** 2)) +
-                    Br2opt[6] * np.exp(-((WL - Br2opt[7]) ** 2) / (2 * Br2opt[8] ** 2))) +
-            hNaBr3 * (g5opt[1] * np.exp(-((WL - g5opt[2]) ** 2) / (2 * g5opt[3] ** 2)) +
-                      g5opt[4] * np.exp(-((WL - g5opt[5]) ** 2) / (2 * g5opt[6] ** 2))))
+    return (hBr2 * Br2_spectrum.get_fit_vals(WL) +
+            hNaBr3 * NaBr3_spectrum.get_fit_vals(WL))
 
 
 """###########TRAIN###############"""
@@ -198,7 +154,8 @@ for i in range(len(train2_t)):
 
     # optimize parameters
     train2_opt, train2_cov = curve_fit(variable_Br2_NaBr3_spectrum,
-                                       xvals, yvals)
+                                       xvals,
+                                       yvals)
 
     # add values to appropriate arrays
     (hBr2[i], hNaBr3[i]) = train2_opt
@@ -211,7 +168,7 @@ for i in range(len(train2_t)):
     ax1.plot(xvals, fit, color='r')
 
 # compute [NaBr3] for all spectra
-NaBr3_conc = Br2_conc_i * (1.0 - hBr2/hBr2[0])
+NaBr3_conc = Br2_conc_i * (1.0 - hBr2 / hBr2[0])
 
 # fit calibration line to data
 line, cov = curve_fit(spec.linear, NaBr3_conc, hNaBr3)
@@ -223,7 +180,7 @@ ax2.plot(NaBr3_conc, spec.linear(NaBr3_conc, line[0], line[1]))
 """##############PREDICT##################"""
 
 
-def predict_concs_from_spectra(dataset, time):
+def compute_concs_from_spectra(dataset, time):
     """
     get_concs(dataset)
     
@@ -277,7 +234,7 @@ def predict_concs_from_spectra(dataset, time):
 
 
 # Predict Br2 and NaBr3 concentrations for all spectra in calibration
-(time, cBr2, cNaBr3) = predict_concs_from_spectra(train1, train1_t)
+(time, cBr2, cNaBr3) = compute_concs_from_spectra(train1, train1_t)
 
 # plot Conc. vs Time for the calibration run
 FIGTITLE = 'Predicted %s and %s Concentrations' % (HALOGEN_LABEL,
@@ -292,24 +249,3 @@ plt.legend()
 
 # SHOW ALL RESULT$
 plt.show()
-
-
-if __name__ == '__main__':
-    # Predict concentrations from other datasets
-    run1_17C, run1_17C_t = \
-        data_io.clean_agilent_uvvis_data('data/run1_17C.TXT')
-    run2_25C, run2_25C_t = \
-        data_io.clean_agilent_uvvis_data('data/run2_25C.TXT')
-    run3_35C, run2_35C_t = \
-        data_io.clean_agilent_uvvis_data('data/run3_35C.TXT')
-
-    run1_17C_concs = predict_concs_from_spectra(run1_17C, run1_17C_t)
-    run2_25C_concs = predict_concs_from_spectra(run2_25C, run2_25C_t)
-    run3_35C_concs = predict_concs_from_spectra(run3_35C, run2_35C_t)
-
-    data_io.write_concs(run1_17C_concs, TIME_LABEL, HALOGEN_LABEL,
-                        TRIHALIDE_LABEL,'data/run1_17C_concs')
-    data_io.write_concs(run2_25C_concs, TIME_LABEL, HALOGEN_LABEL,
-                        TRIHALIDE_LABEL,'data/run2_25C_concs')
-    data_io.write_concs(run3_35C_concs, TIME_LABEL, HALOGEN_LABEL,
-                        TRIHALIDE_LABEL,'data/run3_35C_concs')
